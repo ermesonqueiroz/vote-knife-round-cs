@@ -4,7 +4,7 @@
 #include <hamsandwich>
 
 #define PLUGIN  "Votação de Round Faca"
-#define VERSION "1.0"
+#define VERSION "1.1"
 #define AUTHOR  "Ermeson Sampaio"
 
 #define VOTE_PERCENTAGE 0.8
