@@ -1,6 +1,7 @@
 #include <amxmodx>
 #include <fun>
 #include <cstrike>
+#include <hamsandwich>
 
 #define PLUGIN  "Votação de Round Faca"
 #define VERSION "1.0"
@@ -17,6 +18,10 @@ Exemplos:
 - 0.5 = 50% dos Jogadores
 - 0.1 = 10% dos Jogadores
 */
+#define MIN_VOTES		2
+/*
+Número mínimo de votos independentemente do número de jogadores on-line
+*/
 
 new playersCounter, votesCounter, votes[32], requiredVotes, canResetVotes = false;
 
@@ -26,8 +31,13 @@ public plugin_init()
 	register_plugin(PLUGIN, VERSION, AUTHOR);
 
 	register_clcmd("say vrf", "handle_vote");
-	register_logevent ("round_start", 2, "1=Round_Start");
+	RegisterHam(Ham_Spawn, "player", "player_spawn", true);
 	register_logevent ("round_end", 2, "1=Round_End");
+}
+
+public player_spawn(id)
+{
+	if (canResetVotes) remove_weapons_and_give_knife(id);
 }
 
 public client_connect(id)
@@ -48,13 +58,8 @@ public remove_weapons_and_give_knife(id)
 	give_item(id, "weapon_knife");
 }
 
-public round_start()
+public start_knife_round()
 {
-	if (votesCounter != requiredVotes) {
-		canResetVotes = false;
-		return PLUGIN_CONTINUE;
-	}
-
 	canResetVotes = true;
 
 	show_dhudmessage(0, "ROUND FACA!");
@@ -73,6 +78,8 @@ public round_start()
 public round_end()
 {
 	if (!canResetVotes) return PLUGIN_CONTINUE;
+
+	canResetVotes = false;
 
 	new players[32], count;
 	get_players(players, count);
@@ -94,7 +101,7 @@ public CS_OnBuy(id)
 public updatePlayersCounter(counter)
 {
 	playersCounter = counter;
-	requiredVotes = max(floatround(counter * VOTE_PERCENTAGE, floatround_floor), 1);
+	requiredVotes = min(max(floatround(counter * VOTE_PERCENTAGE, floatround_floor), MIN_VOTES), 31);
 }
 
 public addVote(id)
@@ -136,10 +143,12 @@ public handle_vote(id)
 		client_print_color(
 			0,
 			print_team_default,
-			"^4%s^1 adicinou seu voto. ^4Próximo round será somente faca!^1",
+			"^4%s^1 adicinou seu voto. ^4O round faca vai começar!^1",
 			name,
 			requiredVotes - votesCounter
 		);
+
+		start_knife_round();
 
 		return PLUGIN_CONTINUE;
 	}
